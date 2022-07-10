@@ -1,10 +1,14 @@
 package br.com.terreno.brasileiraoapi.util;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.LoggerFactory;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import br.com.terreno.brasileiraoapi.dto.PartidaGoogleDTO;
 import ch.qos.logback.classic.Logger;
@@ -41,7 +45,7 @@ public class ScrapingUtil {
 	public static void main(String[] args) {
 		 
 		//String url = BASE_URL_GOOGLE + "palmeiras+x+corinthians+08/08/2020" + COMPLEMENTO_URL_GOOGLE;
-		String url = BASE_URL_GOOGLE + "gremio+v+nautico" + COMPLEMENTO_URL_GOOGLE;
+		String url = BASE_URL_GOOGLE + "palmeiras+x+cerro%20porteno+06/07/2022" + COMPLEMENTO_URL_GOOGLE;
 		
 		ScrapingUtil scraping = new ScrapingUtil();
 		scraping.obtemInformacoesPartida(url);
@@ -61,14 +65,21 @@ public class ScrapingUtil {
 			LOGGER.info(title, "");
 			  
 			StatusPartida statusPartida = obtemStatusPartida(document);
-			
 			LOGGER.info(statusPartida.toString());  
 			//LOGGER.info(StatusPartida.valueOf(title), "");
 			 
+			if (statusPartida != StatusPartida.PARTIDA_NAO_INICIADA) {
+				String tempoPartida = obtemTempoPartida(document);
+				LOGGER.info(tempoPartida);
+			}
+		
+			String nomeEquipeCasa = recuperaNomeEquipeCasa(document);
+			LOGGER.info(nomeEquipeCasa);
 			
-			String tempoPartidaw = obtemTempoPartida(document);
 			
-			LOGGER.info(tempoPartidaw);  
+			//String urlLogoEquipeCasa = recuperaUrlLogoEquipe(document); 
+			
+			LOGGER.info(recuperaGolsEquipeCasa(document));
 			
 			
 		} catch (IOException e) {
@@ -144,6 +155,39 @@ public class ScrapingUtil {
 		}
 		return tempoPartida;
 	}
+	
+	
+	public String recuperaNomeEquipeCasa(Document document) {
+		Element elemento = document.selectFirst("div[class=imso_mh__first-tn-ed imso_mh__tnal-cont imso-tnol]");
+		String nomeEquipe = elemento.select("span").text();
+		return nomeEquipe;
+	}
+	
+	public String recuperaUrlLogoEquipe(Document document, String itemHtml) {
+		Element elementLogoEquipe = document.select(itemHtml).first();
+		String urlLogo = HTTPS + elementLogoEquipe.select(IMG_ITEM_LOGO).attr(SRC);
+
+		return urlLogo;
+	}
+	
+	
+	public String recuperaGolsEquipeCasa(Document document) {
+		
+		List<String> golsEquipe = new ArrayList<>();
+
+		Elements timeCasa = document.select("div[class=imso_gs__tgs imso_gs__left-team]").select(DIV_ITEM_GOLS);
+		
+		//LOGGER.info(timeCasa.text()); 
+		
+		for (Element e : timeCasa) {
+			String infoGol = e.select(DIV_ITEM_GOLS).text();
+			
+			golsEquipe.add(infoGol);
+		}
+
+		return golsEquipe.isEmpty() ? null : String.join(", ", golsEquipe);
+	}
+	
 	
 	
 }
